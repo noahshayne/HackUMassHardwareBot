@@ -4,7 +4,7 @@ This repository contains a minimal Discord bot setup using discord.py and python
 
 Quick start (Windows PowerShell):
 
-1. Create and activate a virtual environment
+1. Create and activate a virtual environment (optional)
 
 ```powershell
 python -m venv venv
@@ -31,9 +31,4 @@ cp .env.example .env
 python -m HackUMassHardwareBot.main
 ```
 
-Tips
-- If you enable Message Content Intent in the Discord Developer Portal, the bot can read message content (required for simple command parsing).
-- Use `!ping` in a server where the bot is invited to test it.
 
-Security
-- Never commit a real `.env` with your token. Add it to `.gitignore` and keep it secret.
