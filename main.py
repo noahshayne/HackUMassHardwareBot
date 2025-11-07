@@ -16,24 +16,31 @@ load_dotenv()
 # Configure Redis client from environment (defaults provided for convenience).
 
 
-HOST=os.getenv("REDIS_HOST")
-
-PORT = os.getenv("REDIS_PORT")
+HOST = os.getenv("REDIS_HOST")
+PORT_STR = os.getenv("REDIS_PORT")
+try:
+	PORT = int(PORT_STR)
+except ValueError:
+	raise RuntimeError(f"Invalid REDIS_PORT value: {PORT_STR!r}. Must be an integer.")
 
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
-
-REDIS_USERNAME = os.getenv("REDIS_USERNAME")
+REDIS_USERNAME = os.getenv("REDIS_USERNAME") 
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 GUILD = os.getenv("DISCORD_GUILD")  # optional: a guild name to log
 
+if not HOST:
+	raise RuntimeError(
+		"REDIS_HOST is not set. Set REDIS_HOST, REDIS_PORT, REDIS_USERNAME, and REDIS_PASSWORD in your environment or .env."
+	)
+
 r = redis.Redis(
-    host=HOST,
-    port=PORT,
-    decode_responses=True,
-    username=REDIS_USERNAME,
-    password=REDIS_PASSWORD,
+	host=HOST,
+	port=PORT,
+	decode_responses=True,
+	username=REDIS_USERNAME,
+	password=REDIS_PASSWORD,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s:%(name)s: %(message)s")
@@ -62,7 +69,7 @@ async def on_ready() -> None:
 	except rexc.AuthenticationError as e:
 		logging.warning("Redis auth failed. Check REDIS_USER/REDIS_PASSWORD. %s", e)
 	except Exception as e:
-		logging.warning("Redis connection check failed: %s", e)
+		logging.warning("Redis connection check failed (host=%s port=%s): %s", HOST, PORT, e)
 
 
 
