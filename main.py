@@ -28,7 +28,7 @@ REDIS_USERNAME = os.getenv("REDIS_USERNAME")
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-GUILD = os.getenv("DISCORD_GUILD")  # optional: a guild name to log
+HARDWARE_LIST_URL = "https://docs.google.com/spreadsheets/d/1kKcwllyCGzlzySMMyQ6V-yhySCRb5-mZsAYSeL_Y_VE/edit?gid=0#gid=0"   #public hardware url link
 
 if not HOST:
 	raise RuntimeError(
@@ -58,18 +58,20 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 async def on_ready() -> None:
 	logging.info(f"Logged in as {bot.user} (ID: {bot.user.id})")
 	print(f"Logged in as {bot.user} (ID: {bot.user.id})")
-	if GUILD:
-		guild = discord.utils.get(bot.guilds, name=GUILD)
-		logging.info(f"Connected to guild: {guild}")
-
-	# Try a Redis ping so auth/connection issues are obvious at startup.
+	# Sync app commands
+	guild_id = os.getenv("DISCORD_GUILD_ID") #server id
 	try:
-		ok = r.ping()
-		logging.info("Redis ping: %s", ok)
-	except rexc.AuthenticationError as e:
-		logging.warning("Redis auth failed. Check REDIS_USER/REDIS_PASSWORD. %s", e)
+		if guild_id:
+			gobj = discord.Object(id=int(guild_id))
+			# Copy global command definitions into the guild and sync.
+			bot.tree.copy_global_to(guild=gobj)
+			cmds = await bot.tree.sync(guild=gobj)
+			logging.info("Synced %d app commands to guild ID %s (instant)", len(cmds), guild_id)
+		else:
+			cmds = await bot.tree.sync()
+			logging.info("Synced %d global app commands (may take up to ~1 hour)", len(cmds))
 	except Exception as e:
-		logging.warning("Redis connection check failed (host=%s port=%s): %s", HOST, PORT, e)
+		logging.warning("Failed to sync app commands: %s", e)
 
 
 
@@ -133,6 +135,12 @@ async def inventory(interaction: discord.Interaction, item: str):
 		)
 	except Exception as e:
 		await interaction.response.send_message(f"Error reading '{item}': {e}", ephemeral=True)
+
+
+@bot.tree.command(name="hardwarelist", description="Get the hardware inventory link")
+async def hardwarelist(interaction: discord.Interaction):
+	"""Sends a link to the hardware inventory/resource list."""
+	await interaction.response.send_message(HARDWARE_LIST_URL)
 
 
 def main() -> None:
